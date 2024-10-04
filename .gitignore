@@ -1,1 +1,6 @@
 .conda
+data-level-1.md
+explore_data.ipynb
+TODO.txt
+__pycache__
+.vscode
