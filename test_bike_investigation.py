@@ -38,9 +38,8 @@ class TestBikeShareData(unittest.TestCase):
         df = pd.DataFrame(data_invalid_test)
         result = time_stats(df)
         self.assertEqual(result['mostCommonMonth'], 'april')
-        # self.assertEqual(result['mostCommonDay'], 'monday')
+        self.assertEqual(result['mostCommonDay'], 'saturday')
         self.assertEqual(result['mostCommonStartHour'], 9)
-                
         
         data_mix_test = {
             'Start Time': ['2017-04-01 09:07:57' # samedi
@@ -58,20 +57,29 @@ class TestBikeShareData(unittest.TestCase):
         self.assertEqual(result['mostCommonDay'], sorted(expected_days))
         self.assertEqual(result['mostCommonStartHour'], 0)
 
-
+        data_duplicate_test = {
+            'Start Time': ['2017-01-02 09:07:57','2017-01-02 09:07:57','2017-01-02 09:07:57']
+        }       
+        df = pd.DataFrame(data_duplicate_test)
+        result = time_stats(df)
+        self.assertEqual(result['mostCommonMonth'], 'january')
+        self.assertEqual(result['mostCommonDay'], 'monday')
+        self.assertEqual(result['mostCommonStartHour'], 9)
 
         data_equal_test = {
             'Start Time': ['2017-01-02 09:07:57','2017-01-02 09:07:57','2017-01-02 09:07:57',
-                           '2017-02-01 09:07:57','2017-02-01 09:07:57','2017-02-01 09:07:57',],
+                           '2017-02-01 10:07:57','2017-02-01 10:07:57','2017-02-01 10:07:57',],
 
         }
         df = pd.DataFrame(data_equal_test)
         result = time_stats(df)
         expected_days = ['wednesday', 'monday']
-        except_months = ['january', 'february']
-        self.assertEqual(result['mostCommonMonth'], sorted(except_months))
+        expected_months = ['january', 'february']
+        expected_hours = [9, 10]
+
+        self.assertEqual(result['mostCommonMonth'], sorted(expected_months))
         self.assertEqual(result['mostCommonDay'], sorted(expected_days))
-        self.assertEqual(result['mostCommonStartHour'], 9)
+        self.assertEqual(result['mostCommonStartHour'], sorted(expected_hours))
 
         data_limit_test = {
             'Start Time': ['2017-01-01 23:59:59', '2017-01-01 23:59:59', '2017-01-02 00:00:00',]

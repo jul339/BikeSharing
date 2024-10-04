@@ -95,15 +95,15 @@ def load_data(city, month, day):
     return df
 
 def find_most_common(cols, x):
-    most_common = cols.mode()
+    most_common = cols.mode().tolist()
     if len(most_common) > 1:
-        print(f"Most commons {x} are: {most_common[0].title()}")
+        print(f"Most commons {x} are: {most_common[0]}", end='')
         for ite in most_common[1:]: 
-            print(f", {ite.title()}")
-        most_common = sorted(most_common.tolist())
+            print(f", {ite}")
+        most_common = sorted(most_common)
     else:
         most_common = most_common[0]
-        print(f"The most commons {x} is {most_common}")
+        print(f"The most common {x} is {most_common}")
     return most_common
 
 
@@ -144,7 +144,8 @@ def time_stats(df):
     # Display the most common start hour
     df['start_hour'] = df['Start Time'].dt.hour
 
-    most_common_start_hour = df['start_hour'].mode()[0]
+    most_common_start_hour = find_most_common(df['start_hour'], 'start hour')
+
     print("\nThis took %s seconds." % (time.time() - start_time))
     print("-" * 40)
     return {
