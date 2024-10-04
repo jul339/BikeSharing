@@ -23,7 +23,7 @@ def get_filters():
 
 
     cities = ['chicago', 'new york city', 'washington']
-    months = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december', 'all'] 
+    months = ['january', 'february', 'march', 'april', 'may', 'june','all'] 
     days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday', 'all']
     
     # TO DO: get user input for city (chicago, new york city, washington).
@@ -39,11 +39,11 @@ def get_filters():
 
    # Get user input for month
     while True:
-        month = input("Enter the name of the month or all for no filter: ").lower()
+        month = input("Enter a month from january to june or all for no filter: ").lower()
         if month in months:
             break
         else:
-            print("Invalid input. Please choose from all, january, february, march, april, may, june, july, august, september, october, november or december.")
+            print("Invalid input. Please choose one of this option : all, january, february, march, april, may or june.")
 
     # Get user input for day of the week
     while True:
@@ -73,6 +73,7 @@ def load_data(city, month, day):
     Returns:
         df - Pandas DataFrame containing city data filtered by month and day
     """
+
     # Load data from CSV into a DataFrame
     df = pd.read_csv(CITY_DATA[city])
     
@@ -99,15 +100,47 @@ def time_stats(df):
 
     print("\nCalculating The Most Frequent Times of Travel...\n")
     start_time = time.time()
+    res = None
 
-    # TO DO: Display the most common month
+    # Check if df exist and contains data
+    if len(df) == 0 or df is None:
+        print("The dataframe is empty or equal to None")
+        return res
+    
+    # Check if Start Time colomn exist
+    if 'Start Time' not in df.columns:
+        print("The dataframe does contains a Start Time column")
+        return res
 
-    # TO DO: Display the most common day of week
+    # Convert Start Time in Datetime if it not the case
+    if df['Start Time'].dtypes != 'datetime64[ns]' :
+        df['Start Time'] = pd.to_datetime(df['Start Time'])
 
-    # TO DO: Display the most common start hour
+    # Display the most common month
+    if 'month' not in df.columns:
+        df['month'] = df['Start Time'].dt.month_name().str.lower()
+    
+    most_common_month = df['month'].mode()[0]
+    print(f"Most common month: {most_common_month.title()}")
 
+    # Display the most common day of week
+    if 'day_of_week' not in df.columns:
+        df['day_of_week'] = df['Start Time'].dt.day_name().str.lower()
+
+    most_common_day = df['day_of_week'].mode()[0]
+    print(f"Most common day of week: {most_common_day.title()}")
+
+    # Display the most common start hour
+    df['start_hour'] = df['Start Time'].dt.hour
+
+    most_common_start_hour = df['start_hour'].mode()[0]
     print("\nThis took %s seconds." % (time.time() - start_time))
     print("-" * 40)
+    return {
+        'mostCommonMonth': most_common_month,
+        'mostCommonDay': most_common_day,
+        'mostCommonStartHour': most_common_start_hour
+    }
 
 
 def station_stats(df):
@@ -158,10 +191,11 @@ def user_stats(df):
 
 def main():
     while True:
-        city, month, day = get_filters()
-        df = load_data(city, month, day)
+        # city, month, day = get_filters()
+        # print(f"You choose this filter : city = {city}, month = {month}, day = {day}")
+        df = load_data('washington', 'all', 'all')
 
-        # time_stats(df)
+        time_stats(df)
         # station_stats(df)
         # trip_duration_stats(df)
         # user_stats(df)
