@@ -75,8 +75,11 @@ def load_data(city, month, day):
     """
 
     # Load data from CSV into a DataFrame
-    df = pd.read_csv(CITY_DATA[city])
-    
+    try:
+        df = pd.read_csv(CITY_DATA[city])
+    except Exception as e:
+        print(f'An error occurred while reading csv {CITY_DATA[city]}: {e}')
+
     # Convert the 'Start Time' column to datetime
     df['Start Time'] = pd.to_datetime(df['Start Time'])
     
@@ -127,6 +130,7 @@ def time_stats(df):
     # Convert Start Time in Datetime if it not the case
     if df['Start Time'].dtypes != 'datetime64[ns]' :
         df['Start Time'] = pd.to_datetime(df['Start Time'], errors='coerce')
+        return time_stats(df.dropna())
 
 
     # Display the most common day of week
@@ -138,12 +142,10 @@ def time_stats(df):
     if 'month' not in df.columns:
         df['month'] = df['Start Time'].dt.month_name().str.lower()
     most_common_month = find_most_common(df['month'], 'month')
-
-
     
     # Display the most common start hour
-    df['start_hour'] = df['Start Time'].dt.hour
-
+    if 'start_hour' not in df.columns:
+        df['start_hour'] = df['Start Time'].dt.hour
     most_common_start_hour = find_most_common(df['start_hour'], 'start hour')
 
     print("\nThis took %s seconds." % (time.time() - start_time))

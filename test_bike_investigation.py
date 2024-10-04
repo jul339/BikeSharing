@@ -40,6 +40,14 @@ class TestBikeShareData(unittest.TestCase):
         self.assertEqual(result['mostCommonMonth'], 'april')
         self.assertEqual(result['mostCommonDay'], 'saturday')
         self.assertEqual(result['mostCommonStartHour'], 9)
+
+        data_only_invalid_test = {
+            'Start Time' : ['invalid date', 'invalid',]
+        }       
+        df = pd.DataFrame(data_only_invalid_test)
+        result = time_stats(df)
+        self.assertIsNone(result)
+                
         
         data_mix_test = {
             'Start Time': ['2017-04-01 09:07:57' # samedi
