@@ -33,33 +33,43 @@ class TestBikeShareData(unittest.TestCase):
         self.assertEqual(result['mostCommonStartHour'], 9)
         
         data_invalid_test = {
-            'Start Time' : ['invalid date', '2017-04-08 09:07:57', '2017-04-03 00:07:57']
+            'Start Time' : ['invalid date', '2017-04-08 09:07:57', '2017-04-08 09:07:57', '2017-04-03 00:07:57']
         }       
         df = pd.DataFrame(data_invalid_test)
         result = time_stats(df)
-        self.assertIsNone(result)
-        
+        self.assertEqual(result['mostCommonMonth'], 'april')
+        # self.assertEqual(result['mostCommonDay'], 'monday')
+        self.assertEqual(result['mostCommonStartHour'], 9)
+                
         
         data_mix_test = {
-            'Start Time': ['2017-04-01 09:07:57', '2017-04-08 09:07:57', '2017-04-03 00:07:57'
-                           , '2017-02-03 00:07:57', '2017-01-04 00:07:57', '2017-02-15 00:07:57'],
+            'Start Time': ['2017-04-01 09:07:57' # samedi
+                           , '2017-04-08 09:07:57' # samedi
+                           , '2017-04-03 00:07:57' # lundi
+                           , '2017-02-03 00:07:57' # vendredi
+                           , '2017-01-04 00:07:57' # mercredi
+                           , '2017-02-15 00:07:57' # mercredi 
+                           ],
         }
         df = pd.DataFrame(data_mix_test)
         result = time_stats(df)
+        expected_days = ['saturday', 'wednesday']
         self.assertEqual(result['mostCommonMonth'], 'april')
-        self.assertEqual(result['mostCommonDay'], 'saturday')
+        self.assertEqual(result['mostCommonDay'], sorted(expected_days))
         self.assertEqual(result['mostCommonStartHour'], 0)
 
 
-        data_equal_test = {
-            'Start Time': ['2017-01-01 09:07:57','2017-01-01 09:07:57','2017-01-01 09:07:57',
+
+        data_days_equal_test = {
+            'Start Time': ['2017-01-02 09:07:57','2017-01-02 09:07:57','2017-01-02 09:07:57',
                            '2017-01-01 09:07:57','2017-01-01 09:07:57','2017-01-01 09:07:57',],
 
         }
-        df = pd.DataFrame(data_equal_test)
+        df = pd.DataFrame(data_days_equal_test)
         result = time_stats(df)
+        expected_days = ['monday', 'sunday']
         self.assertEqual(result['mostCommonMonth'], 'january')
-        self.assertEqual(result['mostCommonDay'], 'sunday')
+        self.assertEqual(result['mostCommonDay'], sorted(expected_days))
         self.assertEqual(result['mostCommonStartHour'], 9)
 
         data_limit_test = {

@@ -114,7 +114,7 @@ def time_stats(df):
 
     # Convert Start Time in Datetime if it not the case
     if df['Start Time'].dtypes != 'datetime64[ns]' :
-        df['Start Time'] = pd.to_datetime(df['Start Time'])
+        df['Start Time'] = pd.to_datetime(df['Start Time'], errors='coerce')
 
     # Display the most common month
     if 'month' not in df.columns:
@@ -127,9 +127,15 @@ def time_stats(df):
     if 'day_of_week' not in df.columns:
         df['day_of_week'] = df['Start Time'].dt.day_name().str.lower()
 
-    most_common_day = df['day_of_week'].mode()[0]
-    print(f"Most common day of week: {most_common_day.title()}")
-
+    most_common_day = df['day_of_week'].mode()
+    if len(most_common_day) > 1:
+        print(f"Most commons days of week are: {most_common_day[0].title()}")
+        for day in most_common_day[1:]: 
+            print(f"Most common day of week: {day.title()}")
+        most_common_day = sorted(most_common_day.tolist())
+    else:
+        most_common_day = most_common_day[0]
+        print(f"The most commons day is {most_common_day}")
     # Display the most common start hour
     df['start_hour'] = df['Start Time'].dt.hour
 
