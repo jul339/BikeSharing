@@ -94,17 +94,17 @@ def load_data(city, month, day):
     
     return df
 
-def find_most_common_day(df_days):
-    most_common_day = df_days.mode()
-    if len(most_common_day) > 1:
-        print(f"Most commons days of week are: {most_common_day[0].title()}")
-        for day in most_common_day[1:]: 
-            print(f", {day.title()}")
-        most_common_day = sorted(most_common_day.tolist())
+def find_most_common(cols, x):
+    most_common = cols.mode()
+    if len(most_common) > 1:
+        print(f"Most commons {x} are: {most_common[0].title()}")
+        for ite in most_common[1:]: 
+            print(f", {ite.title()}")
+        most_common = sorted(most_common.tolist())
     else:
-        most_common_day = most_common_day[0]
-        print(f"The most commons day is {most_common_day}")
-    return most_common_day
+        most_common = most_common[0]
+        print(f"The most commons {x} is {most_common}")
+    return most_common
 
 
 def time_stats(df):
@@ -132,15 +132,12 @@ def time_stats(df):
     # Display the most common day of week
     if 'day_of_week' not in df.columns:
         df['day_of_week'] = df['Start Time'].dt.day_name().str.lower()
-    most_common_day = find_most_common_day(df['day_of_week'])
+    most_common_day = find_most_common(df['day_of_week'], 'day of week')
 
     # Display the most common month
     if 'month' not in df.columns:
         df['month'] = df['Start Time'].dt.month_name().str.lower()
-    
-
-    most_common_month = df['month'].mode()[0]
-    print(f"Most common month: {most_common_month.title()}")
+    most_common_month = find_most_common(df['month'], 'month')
 
 
     

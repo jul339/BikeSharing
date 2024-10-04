@@ -60,15 +60,16 @@ class TestBikeShareData(unittest.TestCase):
 
 
 
-        data_days_equal_test = {
+        data_equal_test = {
             'Start Time': ['2017-01-02 09:07:57','2017-01-02 09:07:57','2017-01-02 09:07:57',
-                           '2017-01-01 09:07:57','2017-01-01 09:07:57','2017-01-01 09:07:57',],
+                           '2017-02-01 09:07:57','2017-02-01 09:07:57','2017-02-01 09:07:57',],
 
         }
-        df = pd.DataFrame(data_days_equal_test)
+        df = pd.DataFrame(data_equal_test)
         result = time_stats(df)
-        expected_days = ['monday', 'sunday']
-        self.assertEqual(result['mostCommonMonth'], 'january')
+        expected_days = ['wednesday', 'monday']
+        except_months = ['january', 'february']
+        self.assertEqual(result['mostCommonMonth'], sorted(except_months))
         self.assertEqual(result['mostCommonDay'], sorted(expected_days))
         self.assertEqual(result['mostCommonStartHour'], 9)
 
