@@ -211,7 +211,54 @@ class TestBikeShareData(unittest.TestCase):
         
         result = station_stats(df)
         
-        self.assertIsNone(result)    
+        self.assertIsNone(result)
+
+    def test_empty_dataframe(self):
+        """Test with an empty DataFrame."""
+        df = pd.DataFrame({'Duration': []})
+        result = trip_duration_stats(df)
+        self.assertIsNone(result, "Expected None for an empty DataFrame.")
+
+    def test_no_duration_column(self):
+        """Test DataFrame without 'Duration' column."""
+        df = pd.DataFrame({'Start Time': ['2017-01-01 09:07:57']})
+        result = trip_duration_stats(df)
+        self.assertIsNone(result, "Expected None when 'Duration' column is missing.")
+
+    def test_all_invalid_duration(self):
+        """Test DataFrame where all 'Duration' values are invalid."""
+        df = pd.DataFrame({'Duration': ['invalid', 'text', None]})
+        result = trip_duration_stats(df)
+        self.assertIsNone(result, "Expected None for invalid or non-numeric 'Duration' values.")
+
+    def test_mixed_invalid_and_valid_duration(self):
+        """Test DataFrame with mixed valid and invalid 'Duration' values."""
+        df = pd.DataFrame({'Duration': ['invalid', 300, 1500, None]})
+        result = trip_duration_stats(df)
+        self.assertEqual(result['total_travel_time'], 1800, "Total travel time should sum valid durations.")
+        self.assertEqual(result['mean_travel_time'], 900, "Mean travel time should consider only valid durations.")
+
+    def test_valid_durations(self):
+        """Test DataFrame with valid 'Duration' values."""
+        df = pd.DataFrame({'Duration': [500, 1500, 3600, 600, 1200]})
+        result = trip_duration_stats(df)
+        self.assertEqual(result['total_travel_time'], 7400, "Total travel time should be the sum of all durations.")
+        self.assertEqual(result['mean_travel_time'], 1480, "Mean travel time should be correctly calculated.")
+
+    def test_single_duration(self):
+        """Test DataFrame with only one 'Duration' value."""
+        df = pd.DataFrame({'Duration': [3000]})
+        result = trip_duration_stats(df)
+        self.assertEqual(result['total_travel_time'], 3000, "Total travel time should be the single duration.")
+        self.assertEqual(result['mean_travel_time'], 3000, "Mean travel time should be the single duration.")
+
+    def test_valid_large_durations(self):
+        """Test DataFrame with a large number of valid 'Duration' values."""
+        df = pd.DataFrame({'Duration': [3600] * 1000})  # 1000 trips of 1 hour (3600 seconds)
+        result = trip_duration_stats(df)
+        self.assertEqual(result['total_travel_time'], 3600000, "Total travel time should be the sum of all durations.")
+        self.assertEqual(result['mean_travel_time'], 3600, "Mean travel time should be the average of all durations.")
+
     
 if __name__ == '__main__':
     unittest.main()

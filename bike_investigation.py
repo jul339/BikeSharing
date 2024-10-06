@@ -128,9 +128,17 @@ def time_stats(df):
         return res
 
     # Convert Start Time in Datetime if it not the case
-    if df['Start Time'].dtypes != 'datetime64[ns]' :
+    try:
         df['Start Time'] = pd.to_datetime(df['Start Time'], errors='coerce')
-        return time_stats(df.dropna())
+    except Exception as e:
+        print(f"Error converting 'Start Time' colum: {e}")
+    
+    df = df.dropna(subset=['Start Time'])
+    
+    # Check if there are any valid rows left after dropping NaN values
+    if df.empty:
+        print("No valid 'Duration' data available.")
+        return None
 
 
     # Display the most common day of week
@@ -201,12 +209,58 @@ def trip_duration_stats(df):
     print("\nCalculating Trip Duration...\n")
     start_time = time.time()
 
-    # TO DO: Display total travel time
+    # Check if the DataFrame is empty or None
+    if df is None or df.empty:
+        print("The DataFrame is empty or None.")
+        return None
+    
+    # Check if the 'Duration' column exists
+    if 'Duration' not in df.columns:
+        print("The DataFrame doesn't contain a 'Duration' column.")
+        return None
+    
+    # Handle any invalid or missing data in the 'Duration' column
+    try:
+        # Convert 'Duration' to numeric in case it's not
+        df['Duration'] = pd.to_numeric(df['Duration'], errors='coerce')
+    except Exception as e:
+        print(f"Error converting 'Duration' column: {e}")
+        return None
 
-    # TO DO: Display mean travel time
+    # Remove rows with NaN values in 'Duration' (after coercion)
+    df = df.dropna(subset=['Duration'])
+    
+    # Check if there are any valid rows left after dropping NaN values
+    if df.empty:
+        print("No valid 'Duration' data available.")
+        return None
+    
+    # Display total travel time
+    total_travel_time = df['Duration'].sum()
+    total_hours = total_travel_time // 3600
+    total_minutes = (total_travel_time % 3600) // 60
+    total_seconds = total_travel_time % 60
+    print(f"Total travel time: {total_travel_time} seconds")
+    print(f"Total travel time: {int(total_hours)} hours, {int(total_minutes)} minutes, {int(total_seconds)} seconds")
+
+    # Display mean travel time
+    mean_travel_time = df['Duration'].mean()
+    mean_hours = mean_travel_time // 3600
+    mean_minutes = (mean_travel_time % 3600) // 60
+    mean_seconds = mean_travel_time % 60
+    print(f"Mean travel time: {mean_travel_time} seconds")
+    print(f"Mean travel time: {int(mean_hours)} hours, {int(mean_minutes)} minutes, {int(mean_seconds)} seconds")
+
+
 
     print("\nThis took %s seconds." % (time.time() - start_time))
     print("-" * 40)
+    
+    return {
+        'total_travel_time': total_travel_time,
+        'mean_travel_time': mean_travel_time
+    }
+
 
 
 def user_stats(df):
@@ -233,7 +287,7 @@ def main():
         df = load_data(city, month, day)
 
         time_stats(df)
-        # station_stats(df)
+        station_stats(df)
         # trip_duration_stats(df)
         # user_stats(df)
 
