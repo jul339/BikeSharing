@@ -157,20 +157,42 @@ def time_stats(df):
     }
 
 
+
 def station_stats(df):
     """Displays statistics on the most popular stations and trip."""
-
+    
     print("\nCalculating The Most Popular Stations and Trip...\n")
     start_time = time.time()
+    res = None
 
-    # TO DO: Display most commonly used start station
+    # Check if df exists and contains data
+    if len(df) == 0 or df is None:
+        print("The dataframe is empty or equal to None")
+        return res
 
-    # TO DO: Display most commonly used end station
+    # Check if Start Station and End Station columns exist
+    if 'Start Station' not in df.columns or 'End Station' not in df.columns:
+        print("The dataframe doesn't contain required station columns")
+        return res
 
-    # TO DO: Display most frequent combination of start station and end station trip
+    # Display most commonly used start station
+    most_common_start_station = find_most_common(df['Start Station'], 'start station')
+
+    # Display most commonly used end station
+    most_common_end_station = find_most_common(df['End Station'], 'end station')
+
+    # Display most frequent combination of start station and end station trip
+    df['trip_combination'] = df['Start Station'] + " -> " + df['End Station']
+    most_common_trip = find_most_common(df['trip_combination'], 'trip combination')
 
     print("\nThis took %s seconds." % (time.time() - start_time))
     print("-" * 40)
+
+    return {
+        'mostCommonStartStation': most_common_start_station,
+        'mostCommonEndStation': most_common_end_station,
+        'mostCommonTrip': most_common_trip
+    }
 
 
 def trip_duration_stats(df):
@@ -205,9 +227,10 @@ def user_stats(df):
 
 def main():
     while True:
-        # city, month, day = get_filters()
-        # print(f"You choose this filter : city = {city}, month = {month}, day = {day}")
-        df = load_data('washington', 'all', 'all')
+        city, month, day = get_filters()
+        print(f"You choose this filter : city = {city}, month = {month}, day = {day}")
+        # df = load_data('washington', 'all', 'all')
+        df = load_data(city, month, day)
 
         time_stats(df)
         # station_stats(df)
