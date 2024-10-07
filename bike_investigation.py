@@ -140,7 +140,6 @@ def time_stats(df):
         print("No valid 'Duration' data available.")
         return None
 
-
     # Display the most common day of week
     if 'day_of_week' not in df.columns:
         df['day_of_week'] = df['Start Time'].dt.day_name().str.lower()
@@ -203,7 +202,7 @@ def station_stats(df):
     }
 
 def trip_duration_stats(df):
-    """Displays statistics on the total and average trip duration, optimized with numpy."""
+    """Displays statistics on the total and average trip duration."""
 
     print("\nCalculating Trip Duration...\n")
     start_time = time.time()
@@ -242,21 +241,62 @@ def trip_duration_stats(df):
     }
 
 
-
 def user_stats(df):
     """Displays statistics on bikeshare users."""
-
+    
     print("\nCalculating User Stats...\n")
     start_time = time.time()
+    res = {
+        'User Type' : None,
+        'Gender' : None,
+        'earliest_birth' : None,
+        'most_recent_birth' : None,
+        'most_common_birth' : None        
+    }
+    if len(df) == 0 or df is None:
+        print("The dataframe is empty or equal to None")
+        return res
 
     # TO DO: Display counts of user types
+    if 'User Type' in df.columns:
+        user_types = df['User Type'].value_counts().to_dict()
+        res['User Type'] = user_types
+        print(f"Counts of user types: {user_types}")
+    else:
+        print("No 'User Type' column found in the DataFrame.")
 
     # TO DO: Display counts of gender
+    if 'Gender' in df.columns:
+        gender_counts = df['Gender'].value_counts().to_dict()
+        res['Gender'] = gender_counts
+        print(f"\nCounts of gender: {gender_counts}")
+
+    else:
+        print("No 'Gender' column found in the DataFrame.")
 
     # TO DO: Display earliest, most recent, and most common year of birth
+    if 'Birth Year' in df.columns:
+        df['Birth Year'] = pd.to_numeric(df['Birth Year'],errors='coerce')
+        df = df.dropna(subset=['Birth Year'])
+        df['Birth Year'] = df['Birth Year'].astype(int)
+        if df['Birth Year'].size > 0:
+            earliest_birth = min(df['Birth Year'])
+            most_recent_birth = max(df['Birth Year'])
+            most_common_birth = find_most_common(df['Birth Year'], 'Birth Year')
+            res['earliest_birth'] = earliest_birth
+            res['most_recent_birth'] = most_recent_birth
+            res['most_common_birth'] = most_common_birth
+            print(f"Earliest year of birth: {earliest_birth}") 
+            print(f"Most recent year of birth: {most_recent_birth}")
+            print(f"Most common year of birth: {most_common_birth}")
+        else:
+            print("No valid birth years available.")
+    else:
+        print("No 'Birth Year' column found in the DataFrame.")
 
     print("\nThis took %s seconds." % (time.time() - start_time))
     print("-" * 40)
+    return res
 
 
 def main():

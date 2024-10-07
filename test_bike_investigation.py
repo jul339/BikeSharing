@@ -259,6 +259,95 @@ class TestBikeShareData(unittest.TestCase):
         self.assertEqual(result['total_travel_time'], 3600000, "Total travel time should be the sum of all durations.")
         self.assertEqual(result['mean_travel_time'], 3600, "Mean travel time should be the average of all durations.")
 
-    
+    def test_empty_dataframe(self):
+        """Test with an empty DataFrame."""
+        df = pd.DataFrame({})
+        result = user_stats(df)
+        expected_result = {
+            'User Type': None,
+            'Gender': None,
+            'earliest_birth': None,
+            'most_recent_birth': None,
+            'most_common_birth': None
+        }
+        self.assertEqual(result, expected_result, "Expected default values for an empty DataFrame.")
+
+    def test_no_user_type_column(self):
+        """Test DataFrame without 'User Type' column."""
+        df = pd.DataFrame({'Gender': ['Male', 'Female'], 'Birth Year': [1985, 1992]})
+        result = user_stats(df)
+        self.assertEqual(result['User Type'], None, "Expected None when 'User Type' column is missing.")
+
+    def test_no_gender_column(self):
+        """Test DataFrame without 'Gender' column."""
+        df = pd.DataFrame({'User Type': ['Subscriber', 'Customer'], 'Birth Year': [1980, 1990]})
+        result = user_stats(df)
+        self.assertEqual(result['Gender'], None, "Expected None when 'Gender' column is missing.")
+
+    def test_no_birth_year_column(self):
+        """Test DataFrame without 'Birth Year' column."""
+        df = pd.DataFrame({'User Type': ['Subscriber', 'Customer'], 'Gender': ['Male', 'Female']})
+        result = user_stats(df)
+        self.assertEqual(result['earliest_birth'], None, "Expected None when 'Birth Year' column is missing.")
+        self.assertEqual(result['most_recent_birth'], None, "Expected None when 'Birth Year' column is missing.")
+        self.assertEqual(result['most_common_birth'], None, "Expected None when 'Birth Year' column is missing.")
+
+    def test_valid_user_type(self):
+        """Test DataFrame with valid 'User Type' column."""
+        df = pd.DataFrame({'User Type': ['Subscriber', 'Customer', 'Subscriber']})
+        result = user_stats(df)
+        expected_user_type = {'Subscriber': 2, 'Customer':1}
+        self.assertEqual(result['User Type'], expected_user_type, 'The count of User Type is false')
+
+    # def test_valid_gender(self):
+    #     """Test DataFrame with valid 'Gender' column."""
+    #     df = pd.DataFrame({'Gender': ['Male', 'Female', 'Female', 'Male']})
+    #     result = user_stats(df)
+    #     expected_gender = pd.Series([2, 2], index=['Male', 'Female'])
+    #     pd.testing.assert_series_equal(result['Gender'], expected_gender, check_names=False)
+
+    def test_valid_birth_year(self):
+        """Test DataFrame with valid 'Birth Year' column."""
+        df = pd.DataFrame({'Birth Year': [1980, 1990, 1985, 1990]})
+        result = user_stats(df)
+        self.assertEqual(result['earliest_birth'], 1980, "Earliest birth year should be 1980.")
+        self.assertEqual(result['most_recent_birth'], 1990, "Most recent birth year should be 1990.")
+        self.assertEqual(result['most_common_birth'], 1990, "Most common birth year should be 1990.")
+
+    def test_birth_year_with_invalid_values(self):
+        """Test DataFrame with invalid 'Birth Year' values."""
+        df = pd.DataFrame({'Birth Year': ['invalid', 1985, None, 1990]})
+        result = user_stats(df)
+        self.assertEqual(result['earliest_birth'], 1985, "Earliest birth year should be 1985.")
+        self.assertEqual(result['most_recent_birth'], 1990, "Most recent birth year should be 1990.")
+        self.assertEqual(result['most_common_birth'], [1985, 1990], "Most common birth year should be 1985.")
+
+    def test_all_invalid_birth(self):
+        """Test DataFrame where all 'Birth Year' values are invalid."""
+        df = pd.DataFrame({'Birth Year': ['invalid', 'invalid', None]})
+        result = user_stats(df)
+        self.assertEqual(result['earliest_birth'], None, "Expected None when all 'Birth Year' values are invalid.")
+        self.assertEqual(result['most_recent_birth'], None, "Expected None when all 'Birth Year' values are invalid.")
+        self.assertEqual(result['most_common_birth'], None, "Expected None when all 'Birth Year' values are invalid.")
+
+    def test_mixed_valid_user_stats(self):
+        """Test DataFrame with valid 'User Type', 'Gender', and 'Birth Year' columns."""
+        df = pd.DataFrame({
+            'User Type': ['Subscriber', 'Customer', 'Subscriber'],
+            'Gender': ['Male', 'Female', 'Male'],
+            'Birth Year': [1980, 1990, 1985]
+        })
+        result = user_stats(df)
+        expected_user_type = {'Subscriber':2 , 'Customer':1}
+        expected_gender = {'Male': 2, 'Female':1}
+        expect_most_common = sorted([1980, 1990, 1985])
+
+        self.assertEqual(result['User Type'], expected_user_type)
+        self.assertEqual(result['Gender'], expected_gender)
+        self.assertEqual(result['earliest_birth'], 1980, "Earliest birth year should be 1980.")
+        self.assertEqual(result['most_recent_birth'], 1990, "Most recent birth year should be 1990.")
+        self.assertEqual(result['most_common_birth'], expect_most_common, "Most common birth year should be 1980.")
+
+
 if __name__ == '__main__':
     unittest.main()
