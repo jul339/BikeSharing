@@ -229,25 +229,22 @@ class TestBikeShareData(unittest.TestCase):
 
 
 
-#                   ------- TESTS Duration Stats --------
+#           ------- TESTS Duration Stats --------
 
     def test_empty_duration_stats(self):
-        """Test with an empty DataFrame."""
+        """Test with an empty DataFrame. Expected to raise ValueError for an empty DataFrame."""
         df = pd.DataFrame({'Trip Duration': []})
-        result = trip_duration_stats(df)
-        self.assertIsNone(result, "Expected None for an empty DataFrame.")
+        self.assertRaises(ValueError, trip_duration_stats, df)
 
     def test_no_duration_colum_duration_stats(self):
-        """Test DataFrame without 'Trip Duration' column."""
+        """Test DataFrame without 'Trip Duration' column. Expected None when 'Trip Duration' column is missing."""
         df = pd.DataFrame({'Start Time': ['2017-01-01 09:07:57']})
-        result = trip_duration_stats(df)
-        self.assertIsNone(result, "Expected None when 'Trip Duration' column is missing.")
+        self.assertRaises(KeyError, trip_duration_stats, df)
 
     def test_all_invalid_duration(self):
-        """Test DataFrame where all 'Trip Duration' values are invalid."""
+        """Test DataFrame where all 'Trip Duration' values are invalid. Expected None for invalid or non-numeric 'Trip Duration' values."""
         df = pd.DataFrame({'Trip Duration': ['invalid', 'text', None]})
-        result = trip_duration_stats(df)
-        self.assertIsNone(result, "Expected None for invalid or non-numeric 'Trip Duration' values.")
+        self.assertRaises(ValueError, trip_duration_stats, df)
 
     def test_mixed_invalid_and_valid_duration(self):
         """Test DataFrame with mixed valid and invalid 'Trip Duration' values."""
@@ -277,18 +274,12 @@ class TestBikeShareData(unittest.TestCase):
         self.assertEqual(result['total_travel_time'], 3600000, "Total travel time should be the sum of all durations.")
         self.assertEqual(result['mean_travel_time'], 3600, "Mean travel time should be the average of all durations.")
 
+    #     ---------- TESTS User Stats ----------
+
     def test_empty_dataframe(self):
-        """Test with an empty DataFrame."""
+        """Test with an empty DataFrame. "Expected default values for an empty DataFrame."""
         df = pd.DataFrame({})
-        result = user_stats(df)
-        expected_result = {
-            'User Type': None,
-            'Gender': None,
-            'earliest_birth': None,
-            'most_recent_birth': None,
-            'most_common_birth': None
-        }
-        self.assertEqual(result, expected_result, "Expected default values for an empty DataFrame.")
+        self.assertRaises(ValueError, user_stats, df)
 
     def test_no_user_type_column(self):
         """Test DataFrame without 'User Type' column."""

@@ -75,9 +75,11 @@ def load_data(city: str, month: str, day: str) -> Optional[pd.DataFrame]:
     try:
         df['Start Time'] = pd.to_datetime(df['Start Time'], errors='coerce')
         log.info("'Start Time' column successfully converted to datetime")
-    except Exception as exc:
-        raise ValueError(f"Wrong format of Start Time (Reason: {str(exc)}") from exc
-    
+    except ValueError:
+        print("Could not convert 'Start Time' to datetime.")
+    except Exception as err:
+        print(f"Unexpected {err=}, {type(err)=}")
+        raise
     # Extract month and day of week from 'Start Time' column
     df['month'] = df['Start Time'].dt.month_name().str.lower()
     df['day_of_week'] = df['Start Time'].dt.day_name().str.lower()
@@ -97,39 +99,43 @@ def load_data(city: str, month: str, day: str) -> Optional[pd.DataFrame]:
 
 def time_stats(df: pd.DataFrame) -> Dict:
     """
-    Calculates and displays statistics on the most frequent times of travel from a given DataFrame.
+    Analyzes and displays statistics on the most frequent times of travel from a given DataFrame.
 
-    This function analyzes the 'Start Time' column in the provided DataFrame to determine the most common
-    month, day of the week, and hour of travel. It handles potential issues such as missing data and 
-    incorrect formats gracefully.
-    If the DataFrame is empty or does not contain a valid 'Start Time' column
+    This function evaluates the 'Start Time' column to identify the most common month, day of the week, 
+    and hour of travel. It raises errors for empty dataframes and missing required columns.
 
     Args:
         df (pd.DataFrame): The DataFrame containing trip data, which must include a 'Start Time' column.
 
     Returns:
-        dict: A dictionary containing the most common month, day of the week, and start hour. , returns None.
+        dict: Contains:
+            - 'mostCommonMonth': the most common month,
+            - 'mostCommonDay': the most common day,
+            - 'mostCommonStartHour': the most common start hour.
+    
+    Raises:
+        ValueError: If the DataFrame is empty or lacks valid 'Start Time' data.
+        KeyError: If the 'Start Time' column is missing.
     """
     print("\nCalculating The Most Frequent Times of Travel...\n")
     start_time = time.time()
 
-    # Check if df exist and contains data
+    # Verify if the dataframe is valid
     if df.empty:
         raise ValueError("The dataframe is empty or equal to None")
-    
-    # Check if Start Time colomn exist
     if 'Start Time' not in df.columns:
         raise KeyError(f"The dataframe doesn't contain a Start Time column")
 
-    # Convert Start Time in Datetime if it not the case
+    # Prepare dataframe for analyzes
     try:
         df['Start Time'] = pd.to_datetime(df['Start Time'], errors='coerce')
         log.info("Succefully convert Start Time colonne")
-    except Exception as e:
-        raise ValueError(f"Error converting 'Start Time' colum to datetime (Reason: {str(e)}") from e
-    
+    except ValueError:
+        print("Error converting 'Start Time' colum to datetime")
+    except Exception as err:
+        print(f"Unexpected {err=}, {type(err)=}")
+        raise
     df = df.dropna(subset=['Start Time'])
-    # Check if there are any valid rows left after dropping NaN values
     if df.empty:
         raise ValueError("No valid 'Start Time' data available")
 
@@ -158,28 +164,45 @@ def time_stats(df: pd.DataFrame) -> Dict:
 
 
 
-def station_stats(df: pd.DataFrame):
-    """Displays statistics on the most popular stations and trip."""
+def station_stats(df: pd.DataFrame) -> Dict:
+    """
+    Computes statistics on the most popular stations and trips from the provided DataFrame.
+
+    The function identifies:
+        - The most commonly used start station.
+        - The most commonly used end station.
+        - The most frequent combination of start and end stations (trip).
+
+    Args:
+        df (pd.DataFrame): DataFrame containing 'Start Station' and 'End Station' columns.
+
+    Returns:
+        dict: Contains:
+            - 'mostCommonStartStation': Most frequent start station.
+            - 'mostCommonEndStation': Most frequent end station.
+            - 'mostCommonTrip': Most frequent trip combination.
+
+    Raises:
+        ValueError: If the DataFrame is empty.
+        KeyError: If 'Start Station' or 'End Station' columns are missing.
+    """
     
     print("\nCalculating The Most Popular Stations and Trip...\n")
     start_time = time.time()
-    res = None
 
-    # Check if df exists and contains data
+    # Verify if the dataframe is valid
     if df.empty:
         raise ValueError("The given dataframe is empty")
-
-    # Check if Start Station and End Station columns exist
     if 'Start Station' not in df.columns or 'End Station' not in df.columns:
         raise KeyError(" dataframe doesn't contain required station columns")
 
-    # Display most commonly used start station
+    # Find and display most commonly used start station
     most_common_start_station = find_most_common(df['Start Station'], 'start station')
 
-    # Display most commonly used end station
+    # Find and display most commonly used end station
     most_common_end_station = find_most_common(df['End Station'], 'end station')
 
-    # Display most frequent combination of start station and end station trip
+    # Find and display most frequent combination of start station and end station trip
     df['trip_combination'] = df['Start Station'] + " -> " + df['End Station']
     most_common_trip = find_most_common(df['trip_combination'], 'trip combination')
 
@@ -193,30 +216,55 @@ def station_stats(df: pd.DataFrame):
     }
 
 def trip_duration_stats(df):
-    """Displays statistics on the total and average trip duration."""
+    """
+    Computes statistics on total and average trip duration from the given DataFrame.
+
+    The function calculates:
+        - Total travel time in hours, minutes, and seconds.
+        - Average travel time in hours, minutes, and seconds.
+
+    Args:
+        df (pd.DataFrame): DataFrame containing a 'Trip Duration' column.
+
+    Returns:
+        dict: Contains:
+            - 'total_travel_time': Sum of trip durations.
+            - 'mean_travel_time': Average trip duration.
+
+    Raises:
+        ValueError: If the DataFrame is empty or contains no valid 'Trip Duration' data.
+        KeyError: If the 'Trip Duration' column is missing.
+    """
 
     print("\nCalculating Trip Duration...\n")
     start_time = time.time()
 
-    # Check if 'Trip Duration' column exists and has valid data
-    if 'Trip Duration' not in df.columns or df['Trip Duration'].isna().all():
-        print("No valid 'Trip Duration' column found.")
-        return None
+    # Verify if the dataframe is valid 
+    if df.empty:
+        raise ValueError("The given dataframe is empty")
+    if 'Trip Duration' not in df.columns:
+        raise KeyError("No valid 'Trip Duration' column found.")
 
-    # Convert 'Trip Duration' to numeric, coerce errors to NaN
-    durations = pd.to_numeric(df['Trip Duration'], errors='coerce').dropna()
-
+    # Prepare dataframe for analyzes
+    try:
+        durations = pd.to_numeric(df['Trip Duration'], errors='coerce').dropna()
+        log.info("Succefully convert 'Trip Duration' colonne")
+    except ValueError:
+        print("Error converting 'Trip Duration' colum to numeric")
+    except Exception as err:
+        print(f"Unexpected {err=}, {type(err)=}")
+        raise
     if len(durations) == 0:
-        print("No valid 'Trip Duration' data.")
-        return None
+        raise ValueError("No valid 'Trip Duration' data.")
 
-    # Use numpy for faster calculation of total and mean
+    # Calculate the total travel time in seconds and display it in a human-readable format
     total_travel_time = np.sum(durations)
     total_hours = total_travel_time // 3600
     total_minutes = (total_travel_time % 3600) // 60
     total_seconds = total_travel_time % 60
     print(f"Total travel time: {int(total_hours)} hours, {int(total_minutes)} minutes, {int(total_seconds)} seconds")
 
+    # Calculate the average travel time and display it in a human-readable format
     mean_travel_time = np.mean(durations)
     mean_hours = mean_travel_time // 3600
     mean_minutes = (mean_travel_time % 3600) // 60
@@ -233,7 +281,22 @@ def trip_duration_stats(df):
 
 
 def user_stats(df):
-    """Displays statistics on bikeshare users."""
+    """
+    Analyzes and displays statistics on bikeshare users from the provided DataFrame.
+
+    This function calculates:
+        - Counts of user types and genders.
+        - Earliest, most recent, and most common birth years.
+        
+    Args:
+        df (pd.DataFrame): The DataFrame containing bikeshare user data, which must include 'User Type', 'Gender', and 'Birth Year' columns.
+
+    Returns:
+        dict: Contains:
+            - the counts of user types and genders, the earliest, most recent, and most common birth years.
+    Raises:
+        ValueError: If the DataFrame is empty.
+    """
     
     print("\nCalculating User Stats...\n")
     start_time = time.time()
@@ -244,20 +307,19 @@ def user_stats(df):
         'most_recent_birth' : None,
         'most_common_birth' : None        
     }
-    if len(df) == 0 or df is None:
-        print("The dataframe is empty or equal to None")
-        return res
+    if df.empty:
+        raise ValueError("The given dataframe is empty")
 
-    # TO DO: Display counts of user types
     if 'User Type' in df.columns:
+        # Calculate counts of user types and display it
         user_types = df['User Type'].value_counts().to_dict()
         res['User Type'] = user_types
         print(f"Counts of user types: {user_types}")
     else:
         print("No 'User Type' column found in the DataFrame.")
 
-    # TO DO: Display counts of gender
     if 'Gender' in df.columns:
+        # Calculate counts of gender and display it 
         gender_counts = df['Gender'].value_counts().to_dict()
         res['Gender'] = gender_counts
         print(f"\nCounts of gender: {gender_counts}")
@@ -265,14 +327,19 @@ def user_stats(df):
     else:
         print("No 'Gender' column found in the DataFrame.")
 
-    # TO DO: Display earliest, most recent, and most common year of birth
     if 'Birth Year' in df.columns:
+        # Prepare 'Birth Year' col to analyse
         try:
             df['Birth Year'] = pd.to_numeric(df['Birth Year'],errors='coerce')
             df = df.dropna(subset=['Birth Year']).copy()
             df['Birth Year'] = df['Birth Year'].astype(int)
-        except Exception as e:
-            raise ValueError(f"Invalid data format for 'Birth Year':(Reason: {str(e)})") from e
+        except ValueError:
+            print("Error converting 'Trip Duration' colum to numeric")
+        except Exception as err:
+            print(f"Unexpected {err=}, {type(err)=}")
+            raise
+
+        # Calculate the earliest, the most recent and the most commun 'Birth Year' and display it
         if df['Birth Year'].size > 0:
             earliest_birth = min(df['Birth Year'])
             most_recent_birth = max(df['Birth Year'])
