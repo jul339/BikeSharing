@@ -1,16 +1,8 @@
-import time
+from tools.imports import *
+from tools.constants import *
+from tools.utils import *
 
-import numpy as np
-import pandas as pd
-
-CITY_DATA = {
-    "chicago": "Bike_raw_data/chicago.csv",
-    "new york city": "Bike_raw_data/new_york_city.csv",
-    "washington": "Bike_raw_data/washington.csv",
-}
-
-
-def get_filters():
+def get_filters()-> Tuple[str, str, str]:
     """
     Asks user to specify a city, month, and day to analyze.
 
@@ -35,7 +27,7 @@ def get_filters():
         if city in cities:
             break
         else:
-            print("Invalid input. Choose one of this city from chicago, new york city, or washington.")
+            log.error("Invalid input. Choose one of this city from chicago, new york city, or washington.")
 
    # Get user input for month
     while True:
@@ -43,7 +35,7 @@ def get_filters():
         if month in months:
             break
         else:
-            print("Invalid input. Please choose one of this option : all, january, february, march, april, may or june.")
+            log.error("Invalid input. Please choose one of this option : all, january, february, march, april, may or june.")
 
     # Get user input for day of the week
     while True:
@@ -51,18 +43,13 @@ def get_filters():
         if day in days:
             break
         else:
-            print("Invalid input. Please choose from all, monday, tuesday, wednesday, thursday, friday, saturday, or sunday.")
-
-
-    # TO DO: get user input for month (all, january, february, ... , june)
-
-    # TO DO: get user input for day of week (all, monday, tuesday, ... sunday)
+            log.error("Invalid input. Please choose from all, monday, tuesday, wednesday, thursday, friday, saturday, or sunday.")
 
     print("-" * 40)
     return city, month, day
 
 
-def load_data(city, month, day):
+def load_data(city: str, month: str, day: str) -> Optional[pd.DataFrame]:
     """
     Loads data for the specified city and filters by month and day if applicable.
 
@@ -71,17 +58,25 @@ def load_data(city, month, day):
         (str) month - name of the month to filter by, or "all" to apply no month filter
         (str) day - name of the day of week to filter by, or "all" to apply no day filter
     Returns:
-        df - Pandas DataFrame containing city data filtered by month and day
+        (Optional[pd.DataFrame]) - Pandas DataFrame containing city data filtered by month and day. Returns None if csv can
     """
-
+    if not (isinstance(city, str) and isinstance(month, str) and isinstance(day, str)):
+        raise TypeError("City, month and day must be str parameters")
+    path = CITY_DATA[city]
+    
     # Load data from CSV into a DataFrame
     try:
-        df = pd.read_csv(CITY_DATA[city])
+        df = pd.read_csv(path)
+        log.info(f"Successfully loaded data for {city} from {path}")
     except Exception as e:
-        print(f'An error occurred while reading csv {CITY_DATA[city]}: {e}')
+        raise ValueError("Error while loading {city} to DataFrame")
 
     # Convert the 'Start Time' column to datetime
-    df['Start Time'] = pd.to_datetime(df['Start Time'])
+    try:
+        df['Start Time'] = pd.to_datetime(df['Start Time'], errors='coerce')
+        log.info("'Start Time' column successfully converted to datetime")
+    except Exception as exc:
+        raise ValueError(f"Wrong format of Start Time (Reason: {str(exc)}") from exc
     
     # Extract month and day of week from 'Start Time' column
     df['month'] = df['Start Time'].dt.month_name().str.lower()
@@ -97,60 +92,58 @@ def load_data(city, month, day):
     
     return df
 
-def find_most_common(cols, x):
-    most_common = cols.mode().tolist()
-    if len(most_common) > 1:
-        print(f"Most commons {x} are: {most_common[0]}", end='')
-        for ite in most_common[1:]: 
-            print(f", {ite}")
-        most_common = sorted(most_common)
-    else:
-        most_common = most_common[0]
-        print(f"The most common {x} is {most_common}")
-    return most_common
 
 
-def time_stats(df):
-    """Displays statistics on the most frequent times of travel."""
 
+def time_stats(df: pd.DataFrame) -> Dict:
+    """
+    Calculates and displays statistics on the most frequent times of travel from a given DataFrame.
+
+    This function analyzes the 'Start Time' column in the provided DataFrame to determine the most common
+    month, day of the week, and hour of travel. It handles potential issues such as missing data and 
+    incorrect formats gracefully.
+    If the DataFrame is empty or does not contain a valid 'Start Time' column
+
+    Args:
+        df (pd.DataFrame): The DataFrame containing trip data, which must include a 'Start Time' column.
+
+    Returns:
+        dict: A dictionary containing the most common month, day of the week, and start hour. , returns None.
+    """
     print("\nCalculating The Most Frequent Times of Travel...\n")
     start_time = time.time()
-    res = None
 
     # Check if df exist and contains data
-    if len(df) == 0 or df is None:
-        print("The dataframe is empty or equal to None")
-        return res
+    if df.empty:
+        raise ValueError("The dataframe is empty or equal to None")
     
     # Check if Start Time colomn exist
     if 'Start Time' not in df.columns:
-        print("The dataframe doesn't contain a Start Time column")
-        return res
+        raise KeyError(f"The dataframe doesn't contain a Start Time column")
 
     # Convert Start Time in Datetime if it not the case
     try:
         df['Start Time'] = pd.to_datetime(df['Start Time'], errors='coerce')
+        log.info("Succefully convert Start Time colonne")
     except Exception as e:
-        print(f"Error converting 'Start Time' colum: {e}")
+        raise ValueError(f"Error converting 'Start Time' colum to datetime (Reason: {str(e)}") from e
     
     df = df.dropna(subset=['Start Time'])
-    
     # Check if there are any valid rows left after dropping NaN values
     if df.empty:
-        print("No valid 'Duration' data available.")
-        return None
+        raise ValueError("No valid 'Start Time' data available")
 
-    # Display the most common day of week
+    # Find and display the most common day of week
     if 'day_of_week' not in df.columns:
         df['day_of_week'] = df['Start Time'].dt.day_name().str.lower()
     most_common_day = find_most_common(df['day_of_week'], 'day of week')
 
-    # Display the most common month
+    # Find and display the most common month
     if 'month' not in df.columns:
         df['month'] = df['Start Time'].dt.month_name().str.lower()
     most_common_month = find_most_common(df['month'], 'month')
     
-    # Display the most common start hour
+    # Find and display the most common start hour
     if 'start_hour' not in df.columns:
         df['start_hour'] = df['Start Time'].dt.hour
     most_common_start_hour = find_most_common(df['start_hour'], 'start hour')
@@ -165,7 +158,7 @@ def time_stats(df):
 
 
 
-def station_stats(df):
+def station_stats(df: pd.DataFrame):
     """Displays statistics on the most popular stations and trip."""
     
     print("\nCalculating The Most Popular Stations and Trip...\n")
@@ -173,14 +166,12 @@ def station_stats(df):
     res = None
 
     # Check if df exists and contains data
-    if len(df) == 0 or df is None:
-        print("The dataframe is empty or equal to None")
-        return res
+    if df.empty:
+        raise ValueError("The given dataframe is empty")
 
     # Check if Start Station and End Station columns exist
     if 'Start Station' not in df.columns or 'End Station' not in df.columns:
-        print("The dataframe doesn't contain required station columns")
-        return res
+        raise KeyError(" dataframe doesn't contain required station columns")
 
     # Display most commonly used start station
     most_common_start_station = find_most_common(df['Start Station'], 'start station')
@@ -207,16 +198,16 @@ def trip_duration_stats(df):
     print("\nCalculating Trip Duration...\n")
     start_time = time.time()
 
-    # Check if 'Duration' column exists and has valid data
-    if 'Duration' not in df.columns or df['Duration'].isna().all():
-        print("No valid 'Duration' column found.")
+    # Check if 'Trip Duration' column exists and has valid data
+    if 'Trip Duration' not in df.columns or df['Trip Duration'].isna().all():
+        print("No valid 'Trip Duration' column found.")
         return None
 
-    # Convert 'Duration' to numeric, coerce errors to NaN
-    durations = pd.to_numeric(df['Duration'], errors='coerce').dropna()
+    # Convert 'Trip Duration' to numeric, coerce errors to NaN
+    durations = pd.to_numeric(df['Trip Duration'], errors='coerce').dropna()
 
     if len(durations) == 0:
-        print("No valid 'Duration' data.")
+        print("No valid 'Trip Duration' data.")
         return None
 
     # Use numpy for faster calculation of total and mean
@@ -276,9 +267,12 @@ def user_stats(df):
 
     # TO DO: Display earliest, most recent, and most common year of birth
     if 'Birth Year' in df.columns:
-        df['Birth Year'] = pd.to_numeric(df['Birth Year'],errors='coerce')
-        df = df.dropna(subset=['Birth Year'])
-        df['Birth Year'] = df['Birth Year'].astype(int)
+        try:
+            df['Birth Year'] = pd.to_numeric(df['Birth Year'],errors='coerce')
+            df = df.dropna(subset=['Birth Year']).copy()
+            df['Birth Year'] = df['Birth Year'].astype(int)
+        except Exception as e:
+            raise ValueError(f"Invalid data format for 'Birth Year':(Reason: {str(e)})") from e
         if df['Birth Year'].size > 0:
             earliest_birth = min(df['Birth Year'])
             most_recent_birth = max(df['Birth Year'])
@@ -301,15 +295,15 @@ def user_stats(df):
 
 def main():
     while True:
-        city, month, day = get_filters()
-        print(f"You choose this filter : city = {city}, month = {month}, day = {day}")
-        # df = load_data('washington', 'all', 'all')
-        df = load_data(city, month, day)
+        # city, month, day = get_filters()
+        # print(f"You choose this filter : city = {city}, month = {month}, day = {day}")
+        # df = load_data(city, month, day)
+        df = load_data('chicago', 'all', 'all')
 
         time_stats(df)
         station_stats(df)
-        # trip_duration_stats(df)
-        # user_stats(df)
+        trip_duration_stats(df)
+        user_stats(df)
 
         restart = input("\nWould you like to restart? Enter yes or no.\n")
         if restart.lower() != "yes":
