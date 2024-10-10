@@ -2,6 +2,11 @@ from tools.imports import *
 from tools.constants import *
 from tools.utils import *
 
+
+log = logging.getLogger("Bike")
+log.setLevel(logging.DEBUG)
+
+
 def get_filters()-> Tuple[str, str, str]:
     """
     Asks user to specify a city, month, and day to analyze.
@@ -18,8 +23,6 @@ def get_filters()-> Tuple[str, str, str]:
     months = ['january', 'february', 'march', 'april', 'may', 'june','all'] 
     days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday', 'all']
     
-    # TO DO: get user input for city (chicago, new york city, washington).
-
 
     # Get user input for city
     while True:
@@ -49,7 +52,7 @@ def get_filters()-> Tuple[str, str, str]:
     return city, month, day
 
 
-def load_data(city: str, month: str, day: str) -> Optional[pd.DataFrame]:
+def load_data(city: str, month: str, day: str) -> pd.DataFrame:
     """
     Loads data for the specified city and filters by month and day if applicable.
 
@@ -58,31 +61,42 @@ def load_data(city: str, month: str, day: str) -> Optional[pd.DataFrame]:
         (str) month - name of the month to filter by, or "all" to apply no month filter
         (str) day - name of the day of week to filter by, or "all" to apply no day filter
     Returns:
-        (Optional[pd.DataFrame]) - Pandas DataFrame containing city data filtered by month and day. Returns None if csv can
+        (pd.DataFrame) - Pandas DataFrame containing city data filtered by month and day.
+    Raises:
+        TypeError: If the given parameters are not str
+        KeyError: If the 'Start Time' column is missing.
+        ValueError: If the 'Start Time' can not be convert to datetime
     """
     if not (isinstance(city, str) and isinstance(month, str) and isinstance(day, str)):
         raise TypeError("City, month and day must be str parameters")
+    if city not in list(CITY_DATA.keys()):
+        raise KeyError(f"There is no data for {city} city")
     path = CITY_DATA[city]
-    
+
     # Load data from CSV into a DataFrame
     try:
         df = pd.read_csv(path)
         log.info(f"Successfully loaded data for {city} from {path}")
-    except Exception as e:
+    except ValueError:
         raise ValueError("Error while loading {city} to DataFrame")
+    except Exception as err:
+        log.error(f"Unexpected {err=}, {type(err)=}")
+        raise        
 
+    if START_TIME not in df.columns:
+        raise KeyError(f"The dataframe doesn't contain a Start Time column")
     # Convert the 'Start Time' column to datetime
     try:
-        df['Start Time'] = pd.to_datetime(df['Start Time'], errors='coerce')
-        log.info("'Start Time' column successfully converted to datetime")
+        df[START_TIME] = pd.to_datetime(df[START_TIME], errors='coerce')
+        log.info("Start Time column successfully converted to datetime")
     except ValueError:
-        print("Could not convert 'Start Time' to datetime.")
+        log.error("Could not convert 'Start Time' to datetime.")
     except Exception as err:
-        print(f"Unexpected {err=}, {type(err)=}")
+        log.error(f"Unexpected {err=}, {type(err)=}")
         raise
     # Extract month and day of week from 'Start Time' column
-    df['month'] = df['Start Time'].dt.month_name().str.lower()
-    df['day_of_week'] = df['Start Time'].dt.day_name().str.lower()
+    df['month'] = df[START_TIME].dt.month_name().str.lower()
+    df['day_of_week'] = df[START_TIME].dt.day_name().str.lower()
     
     # Filter by month if applicable
     if month != 'all':
@@ -123,35 +137,35 @@ def time_stats(df: pd.DataFrame) -> Dict:
     # Verify if the dataframe is valid
     if df.empty:
         raise ValueError("The dataframe is empty or equal to None")
-    if 'Start Time' not in df.columns:
+    if START_TIME not in df.columns:
         raise KeyError(f"The dataframe doesn't contain a Start Time column")
 
     # Prepare dataframe for analyzes
     try:
-        df['Start Time'] = pd.to_datetime(df['Start Time'], errors='coerce')
+        df[START_TIME] = pd.to_datetime(df[START_TIME], errors='coerce')
         log.info("Succefully convert Start Time colonne")
     except ValueError:
-        print("Error converting 'Start Time' colum to datetime")
+        log.error("Error converting 'Start Time' colum to datetime")
     except Exception as err:
-        print(f"Unexpected {err=}, {type(err)=}")
+        log.error(f"Unexpected {err=}, {type(err)=}")
         raise
-    df = df.dropna(subset=['Start Time'])
+    df = df.dropna(subset=[START_TIME])
     if df.empty:
         raise ValueError("No valid 'Start Time' data available")
 
     # Find and display the most common day of week
     if 'day_of_week' not in df.columns:
-        df['day_of_week'] = df['Start Time'].dt.day_name().str.lower()
+        df['day_of_week'] = df[START_TIME].dt.day_name().str.lower()
     most_common_day = find_most_common(df['day_of_week'], 'day of week')
 
     # Find and display the most common month
     if 'month' not in df.columns:
-        df['month'] = df['Start Time'].dt.month_name().str.lower()
+        df['month'] = df[START_TIME].dt.month_name().str.lower()
     most_common_month = find_most_common(df['month'], 'month')
     
     # Find and display the most common start hour
     if 'start_hour' not in df.columns:
-        df['start_hour'] = df['Start Time'].dt.hour
+        df['start_hour'] = df[START_TIME].dt.hour
     most_common_start_hour = find_most_common(df['start_hour'], 'start hour')
 
     print("\nThis took %s seconds." % (time.time() - start_time))
@@ -250,9 +264,9 @@ def trip_duration_stats(df):
         durations = pd.to_numeric(df['Trip Duration'], errors='coerce').dropna()
         log.info("Succefully convert 'Trip Duration' colonne")
     except ValueError:
-        print("Error converting 'Trip Duration' colum to numeric")
+        log.error("Error converting 'Trip Duration' colum to numeric")
     except Exception as err:
-        print(f"Unexpected {err=}, {type(err)=}")
+        log.error(f"Unexpected {err=}, {type(err)=}")
         raise
     if len(durations) == 0:
         raise ValueError("No valid 'Trip Duration' data.")
@@ -297,7 +311,7 @@ def user_stats(df):
     Raises:
         ValueError: If the DataFrame is empty.
     """
-    
+
     print("\nCalculating User Stats...\n")
     start_time = time.time()
     res = {
@@ -314,18 +328,18 @@ def user_stats(df):
         # Calculate counts of user types and display it
         user_types = df['User Type'].value_counts().to_dict()
         res['User Type'] = user_types
-        print(f"Counts of user types: {user_types}")
+        log.info(f"Counts of user types: {user_types}")
     else:
-        print("No 'User Type' column found in the DataFrame.")
+        log.warning("No 'User Type' column found in the DataFrame.")
 
     if 'Gender' in df.columns:
         # Calculate counts of gender and display it 
         gender_counts = df['Gender'].value_counts().to_dict()
         res['Gender'] = gender_counts
-        print(f"\nCounts of gender: {gender_counts}")
+        log.info(f"\nCounts of gender: {gender_counts}")
 
     else:
-        print("No 'Gender' column found in the DataFrame.")
+        log.warning("No 'Gender' column found in the DataFrame.")
 
     if 'Birth Year' in df.columns:
         # Prepare 'Birth Year' col to analyse
@@ -334,9 +348,9 @@ def user_stats(df):
             df = df.dropna(subset=['Birth Year']).copy()
             df['Birth Year'] = df['Birth Year'].astype(int)
         except ValueError:
-            print("Error converting 'Trip Duration' colum to numeric")
+            log.error("Error converting 'Trip Duration' colum to numeric")
         except Exception as err:
-            print(f"Unexpected {err=}, {type(err)=}")
+            log.error(f"Unexpected {err=}, {type(err)=}")
             raise
 
         # Calculate the earliest, the most recent and the most commun 'Birth Year' and display it
@@ -349,11 +363,10 @@ def user_stats(df):
             res['most_common_birth'] = most_common_birth
             print(f"Earliest year of birth: {earliest_birth}") 
             print(f"Most recent year of birth: {most_recent_birth}")
-            print(f"Most common year of birth: {most_common_birth}")
         else:
-            print("No valid birth years available.")
+            log.warning("No valid birth years available.")
     else:
-        print("No 'Birth Year' column found in the DataFrame.")
+        log.warning("No 'Birth Year' column found in the DataFrame.")
 
     print("\nThis took %s seconds." % (time.time() - start_time))
     print("-" * 40)
