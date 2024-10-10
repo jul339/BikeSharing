@@ -95,16 +95,16 @@ def load_data(city: str, month: str, day: str) -> pd.DataFrame:
         log.error(f"Unexpected {err=}, {type(err)=}")
         raise
     # Extract month and day of week from 'Start Time' column
-    df['month'] = df[START_TIME].dt.month_name().str.lower()
-    df['day_of_week'] = df[START_TIME].dt.day_name().str.lower()
+    df[MONTH] = df[START_TIME].dt.month_name().str.lower()
     
     # Filter by month if applicable
+    df[DAY] = df[START_TIME].dt.day_name().str.lower()
     if month != 'all':
-        df = df[df['month'] == month.lower()]
+        df = df[df[MONTH] == month.lower()]
     
     # Filter by day of week if applicable
     if day != 'all':
-        df = df[df['day_of_week'] == day.lower()]
+        df = df[df[DAY] == day.lower()]
     
     return df
 
@@ -154,14 +154,14 @@ def time_stats(df: pd.DataFrame) -> Dict:
         raise ValueError("No valid 'Start Time' data available")
 
     # Find and display the most common day of week
-    if 'day_of_week' not in df.columns:
-        df['day_of_week'] = df[START_TIME].dt.day_name().str.lower()
-    most_common_day = find_most_common(df['day_of_week'], 'day of week')
+    if DAY not in df.columns:
+        df[DAY] = df[START_TIME].dt.day_name().str.lower()
+    most_common_day = find_most_common(df[DAY], 'day of week')
 
     # Find and display the most common month
-    if 'month' not in df.columns:
-        df['month'] = df[START_TIME].dt.month_name().str.lower()
-    most_common_month = find_most_common(df['month'], 'month')
+    if MONTH not in df.columns:
+        df[MONTH] = df[START_TIME].dt.month_name().str.lower()
+    most_common_month = find_most_common(df[MONTH], MONTH)
     
     # Find and display the most common start hour
     if 'start_hour' not in df.columns:
@@ -375,10 +375,10 @@ def user_stats(df):
 
 def main():
     while True:
-        # city, month, day = get_filters()
-        # print(f"You choose this filter : city = {city}, month = {month}, day = {day}")
-        # df = load_data(city, month, day)
-        df = load_data('chicago', 'all', 'all')
+        city, month, day = get_filters()
+        print(f"You choose this filter : city = {city}, month = {month}, day = {day}")
+        df = load_data(city, month, day)
+        # df = load_data('chicago', 'all', 'all')
 
         time_stats(df)
         station_stats(df)

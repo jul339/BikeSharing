@@ -68,20 +68,21 @@ Ensure that the CSV files for the cities are available in the paths defined by t
 
 To execute the analysis, follow these steps:
 
-1. Clone the repository to your local machine.
-2. Navigate to the project folder:
+1. Clone the repository and navigate to your local folder.
+
+Navigate:
 
     ```bash
     cd path/to/project
     ```
 
-3. Ensure you have all the necessary dependencies by installing them:
+2. Ensure you have all the necessary dependencies by installing them:
 
     ```bash
     pip install -r requirements.txt
     ```
 
-4. Run the main script:
+3. Run the main script:
 
     ```bash
     python bike_investigation.py

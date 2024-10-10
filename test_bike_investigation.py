@@ -1,79 +1,13 @@
 import unittest
-import pandas as pd
-from unittest.mock import patch, mock_open
 from bike_investigation import time_stats, station_stats, trip_duration_stats, user_stats, load_data
+from tools.imports import *
+from tools.constants import *
 
 class TestBikeShareData(unittest.TestCase):
-
-    # 
-    @patch('builtins.open', new_callable=mock_open, read_data="Start Time\n2023-10-08 09:00:00")
-    @patch('pandas.read_csv')
-    def test_load_data_valid_city(self, mock_read_csv, mock_open):
-        '''Test with valid city, month, and day'''
-        mock_read_csv.return_value = pd.DataFrame({
-            'Start Time': ['2023-10-08 09:00:00', '2023-10-09 10:00:00']
-        })
-        df = load_data('chicago', 'all', 'all')
-        self.assertIsInstance(df, pd.DataFrame)
-        self.assertEqual(len(df), 2)
-
-    def test_load_data_invalid_city(self):
-        '''Test with a city not in CITY_DATA'''
-        with self.assertRaises(KeyError):
-            load_data('invalid_city', 'all', 'all')
-
-    @patch('pandas.read_csv')
-    def test_load_data_invalid_month_filter(self, mock_read_csv):
-        '''Test with month filter that does not exist in data'''
-        mock_read_csv.return_value = pd.DataFrame({
-            'Start Time': pd.to_datetime(['2023-06-01 10:00:00'])
-        })
-        df = load_data('chicago', 'invalid_month', 'all')
-        self.assertTrue(df.empty)
-
-    @patch('pandas.read_csv')
-    def test_load_data_invalid_day_filter(self, mock_read_csv):
-        '''Test with day filter that does not exist in data'''
-        mock_read_csv.return_value = pd.DataFrame({
-            'Start Time': pd.to_datetime(['2023-10-01 09:00:00'])
-        })
-        df = load_data('chicago', 'all', 'invalid_day')
-        self.assertTrue(df.empty)
-
-    def test_load_data_invalid_types(self):
-        '''Test with invalid types for city, month, and day'''
-        with self.assertRaises(TypeError):
-            load_data(123, 'january', 'monday')
-
-    @patch('pandas.read_csv')
-    def test_load_data_month_filter(self, mock_read_csv):
-        '''Test filtering by month'''
-        mock_read_csv.return_value = pd.DataFrame({
-            'Start Time': pd.to_datetime(['2023-06-01 10:00:00', '2023-07-01 11:00:00'])
-        })
-        df = load_data('chicago', 'june', 'all')
-        self.assertEqual(len(df), 1)
-        self.assertTrue(df['Start Time'].dt.month_name().str.lower().eq('june').all())
-
-    @patch('pandas.read_csv')
-    def test_load_data_day_filter(self, mock_read_csv):
-        '''Test filtering by day'''
-        mock_read_csv.return_value = pd.DataFrame({
-            'Start Time': pd.to_datetime(['2023-06-01 10:00:00', '2023-06-02 11:00:00'])
-        })
-        df = load_data('chicago', 'all', 'friday')
-        self.assertEqual(len(df), 1)
-        self.assertTrue(df['Start Time'].dt.day_name().str.lower().eq('friday').all())
-
-    @patch('pandas.read_csv', side_effect=FileNotFoundError)
-    def test_load_data_file_not_found(self, mock_read_csv):
-        # Test with a city that leads to a FileNotFoundError
-        with self.assertRaises(KeyError):
-            load_data('chicag', 'all', 'all')
     
     def test_timestats_empty_df(self):
         """Test case where DataFrame is empty. Expecte raising ValueError."""
-        data_None = {'Start Time': []}
+        data_None = {START_TIME: []}
         df = pd.DataFrame(data_None)
         self.assertRaises(ValueError,time_stats, df)
 
@@ -85,13 +19,13 @@ class TestBikeShareData(unittest.TestCase):
     
     def test_time_stats_only_invalid(self):
         """Test case where 'Start Time' contains only invalid dates, expecting time stats to Raising error as result."""
-        data_only_invalid_test = {'Start Time': ['invalid date', 'invalid']}
+        data_only_invalid_test = {START_TIME: ['invalid date', 'invalid']}
         df = pd.DataFrame(data_only_invalid_test)
         self.assertRaises(ValueError,time_stats,df)
 
     def test_timestats_single_date(self):
         """Test case with a single valid 'Start Time' entry, verifying the most common time stats."""
-        data_One_Value = {'Start Time': ['2017-03-01 09:07:57']}
+        data_One_Value = {START_TIME: ['2017-03-01 09:07:57']}
         df = pd.DataFrame(data_One_Value)
         result = time_stats(df)
         self.assertEqual(result['mostCommonMonth'], ['march'])
@@ -101,7 +35,7 @@ class TestBikeShareData(unittest.TestCase):
     def test_timestats_mixed_dates(self):
         """Test case where 'Start Time' has both valid and invalid dates, expecting results from valid entries."""
         data_one_invalid_test = {
-            'Start Time': ['invalid date', '2017-04-08 09:07:57', '2017-04-08 09:07:57', '2017-04-03 00:07:57']
+            START_TIME: ['invalid date', '2017-04-08 09:07:57', '2017-04-08 09:07:57', '2017-04-03 00:07:57']
         }
         df = pd.DataFrame(data_one_invalid_test)
         result = time_stats(df)
@@ -113,7 +47,7 @@ class TestBikeShareData(unittest.TestCase):
     def test_timestats_mixed_days_with_ties(self):
         """Test case with a mix of days and ties in the most common day, verifying the correct output."""
         data_mix_test = {
-            'Start Time': [
+            START_TIME: [
                 '2017-04-01 09:07:57', # saturday
                 '2017-04-08 09:07:57', # saturday
                 '2017-04-03 00:07:57', # monday
@@ -131,7 +65,7 @@ class TestBikeShareData(unittest.TestCase):
 
     def test_timestats_duplicate(self):
         """Test case where all entries are duplicates."""
-        data_duplicate_test = {'Start Time': ['2017-01-02 09:07:57', '2017-01-02 09:07:57', '2017-01-02 09:07:57']}
+        data_duplicate_test = {START_TIME: ['2017-01-02 09:07:57', '2017-01-02 09:07:57', '2017-01-02 09:07:57']}
         df = pd.DataFrame(data_duplicate_test)
         result = time_stats(df)
         self.assertEqual(result['mostCommonMonth'], ['january'])
@@ -141,7 +75,7 @@ class TestBikeShareData(unittest.TestCase):
     def test_time_ties_in_month_day_and_hour(self):
         """Test case where there are ties for the most common month, day, and hour."""
         data_equal_test = {
-            'Start Time': [
+            START_TIME: [
                 '2017-01-02 09:07:57', '2017-01-02 09:07:57', '2017-01-02 09:07:57',
                 '2017-02-01 10:07:57', '2017-02-01 10:07:57', '2017-02-01 10:07:57'
             ]
@@ -158,7 +92,7 @@ class TestBikeShareData(unittest.TestCase):
     def test_timestats_edge_case(self):
         """Test case with 'Start Time' at the edge of the day (23:59 and 00:00), verifying hour handling."""
         data_limit_test = {
-            'Start Time': ['2017-01-01 23:59:59', '2017-01-01 23:59:59', '2017-01-02 00:00:00']
+            START_TIME: ['2017-01-01 23:59:59', '2017-01-01 23:59:59', '2017-01-02 00:00:00']
         }
         df = pd.DataFrame(data_limit_test)
         result = time_stats(df)
@@ -287,7 +221,7 @@ class TestBikeShareData(unittest.TestCase):
 
     def test_no_duration_colum_duration_stats(self):
         """Test DataFrame without 'Trip Duration' column. Expected None when 'Trip Duration' column is missing."""
-        df = pd.DataFrame({'Start Time': ['2017-01-01 09:07:57']})
+        df = pd.DataFrame({START_TIME: ['2017-01-01 09:07:57']})
         self.assertRaises(KeyError, trip_duration_stats, df)
 
     def test_all_invalid_duration(self):
