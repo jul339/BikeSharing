@@ -49,14 +49,14 @@ The project uses the following technologies and libraries:
 **Prerequisites**
 Ensure you have Python 3.10 installed on your machine. You'll also need to install the required Python libraries.
 
-Clone the repository:
+1. Clone the repository:
 
     ```bash
     git clone https://github.com/jul339/BikeSharing.git
     cd BikeSharing
     ```
 
-Install the dependencies:
+2. Install the dependencies:
 
     ```bash
     pip install -r requirements.txt
@@ -68,9 +68,7 @@ Ensure that the CSV files for the cities are available in the paths defined by t
 
 To execute the analysis, follow these steps:
 
-1. Clone the repository and navigate to your local folder.
-
-Navigate:
+1. Clone the repository and navigate to your local folder:
 
     ```bash
     cd path/to/project
@@ -103,19 +101,19 @@ This will execute all the test cases and ensure that your functions behave as ex
 
 Here is a summary of the key functions implemented in this project:
 
-**load_data(city: str, month: str, day: str) -> pd.DataFrame**
+**load_data(city: str, month: str, day: str) -> pd.DataFrame** :
 Loads data for the specified city and filters by month and day if applicable.
 
-**time_stats(df: pd.DataFrame) -> Dict**
+**time_stats(df: pd.DataFrame) -> Dict** :
 Displays statistics on the most frequent times of travel, including the most common month, day, and start hour.
 
-**station_stats(df: pd.DataFrame) -> Dict**
+**station_stats(df: pd.DataFrame) -> Dict** :
 Displays statistics on the most popular stations and trip combinations.
 
-**trip_duration_stats(df: pd.DataFrame) -> Dict**
+**trip_duration_stats(df: pd.DataFrame) -> Dict** :
 Displays total and average trip durations in hours, minutes, and seconds.
 
-**user_stats(df: pd.DataFrame) -> Dict**
+**user_stats(df: pd.DataFrame) -> Dict** :
 Displays statistics on user types, gender distribution, and birth year statistics.
 Contributing
 If you would like to contribute to this project, feel free to fork the repository and submit a pull request. Please make sure to update the documentation and add tests for any new functionality.
