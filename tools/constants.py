@@ -4,4 +4,3 @@ CITY_DATA = {
     "washington": "Bike_raw_data/washington.csv",
 }
 START_TIME = 'Start Time'
-DAYS = 'days'

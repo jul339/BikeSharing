@@ -4,6 +4,72 @@ from unittest.mock import patch, mock_open
 from bike_investigation import time_stats, station_stats, trip_duration_stats, user_stats, load_data
 
 class TestBikeShareData(unittest.TestCase):
+
+    # 
+    @patch('builtins.open', new_callable=mock_open, read_data="Start Time\n2023-10-08 09:00:00")
+    @patch('pandas.read_csv')
+    def test_load_data_valid_city(self, mock_read_csv, mock_open):
+        '''Test with valid city, month, and day'''
+        mock_read_csv.return_value = pd.DataFrame({
+            'Start Time': ['2023-10-08 09:00:00', '2023-10-09 10:00:00']
+        })
+        df = load_data('chicago', 'all', 'all')
+        self.assertIsInstance(df, pd.DataFrame)
+        self.assertEqual(len(df), 2)
+
+    def test_load_data_invalid_city(self):
+        '''Test with a city not in CITY_DATA'''
+        with self.assertRaises(KeyError):
+            load_data('invalid_city', 'all', 'all')
+
+    @patch('pandas.read_csv')
+    def test_load_data_invalid_month_filter(self, mock_read_csv):
+        '''Test with month filter that does not exist in data'''
+        mock_read_csv.return_value = pd.DataFrame({
+            'Start Time': pd.to_datetime(['2023-06-01 10:00:00'])
+        })
+        df = load_data('chicago', 'invalid_month', 'all')
+        self.assertTrue(df.empty)
+
+    @patch('pandas.read_csv')
+    def test_load_data_invalid_day_filter(self, mock_read_csv):
+        '''Test with day filter that does not exist in data'''
+        mock_read_csv.return_value = pd.DataFrame({
+            'Start Time': pd.to_datetime(['2023-10-01 09:00:00'])
+        })
+        df = load_data('chicago', 'all', 'invalid_day')
+        self.assertTrue(df.empty)
+
+    def test_load_data_invalid_types(self):
+        '''Test with invalid types for city, month, and day'''
+        with self.assertRaises(TypeError):
+            load_data(123, 'january', 'monday')
+
+    @patch('pandas.read_csv')
+    def test_load_data_month_filter(self, mock_read_csv):
+        '''Test filtering by month'''
+        mock_read_csv.return_value = pd.DataFrame({
+            'Start Time': pd.to_datetime(['2023-06-01 10:00:00', '2023-07-01 11:00:00'])
+        })
+        df = load_data('chicago', 'june', 'all')
+        self.assertEqual(len(df), 1)
+        self.assertTrue(df['Start Time'].dt.month_name().str.lower().eq('june').all())
+
+    @patch('pandas.read_csv')
+    def test_load_data_day_filter(self, mock_read_csv):
+        '''Test filtering by day'''
+        mock_read_csv.return_value = pd.DataFrame({
+            'Start Time': pd.to_datetime(['2023-06-01 10:00:00', '2023-06-02 11:00:00'])
+        })
+        df = load_data('chicago', 'all', 'friday')
+        self.assertEqual(len(df), 1)
+        self.assertTrue(df['Start Time'].dt.day_name().str.lower().eq('friday').all())
+
+    @patch('pandas.read_csv', side_effect=FileNotFoundError)
+    def test_load_data_file_not_found(self, mock_read_csv):
+        # Test with a city that leads to a FileNotFoundError
+        with self.assertRaises(KeyError):
+            load_data('chicag', 'all', 'all')
     
     def test_timestats_empty_df(self):
         """Test case where DataFrame is empty. Expecte raising ValueError."""
